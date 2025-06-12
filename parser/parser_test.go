@@ -3,8 +3,8 @@ package parser_test
 import (
 	"github.com/vkhonin/scheme/lexer"
 	"github.com/vkhonin/scheme/parser"
+	"github.com/vkhonin/scheme/parser/number"
 	"testing"
-	"unsafe"
 )
 
 type testCase struct {
@@ -16,21 +16,6 @@ type testCase struct {
 func TestParser_Parse(t *testing.T) {
 	p := parser.Parser{}
 
-	var (
-		trueValue        = true
-		falseValue       = false
-		spaceCharValue   = ' '
-		newlineCharValue = '\n'
-		aCharValue       = 'a'
-		stringValue      = "string"
-		symbolValue      = "symbol"
-
-		quoteValue           = "quote"
-		quasiquoteValue      = "quasiquote"
-		unquoteValue         = "unquote"
-		unquoteSplicingValue = "unquote-splicing"
-	)
-
 	testCases := []testCase{
 		{
 			Description: "Bool",
@@ -39,8 +24,8 @@ func TestParser_Parse(t *testing.T) {
 				{Type: lexer.BOOL, Literal: "#f"},
 			},
 			Output: []parser.Sexpr{
-				&parser.Atom{Type: parser.BOOL, Value: unsafe.Pointer(&trueValue)},
-				&parser.Atom{Type: parser.BOOL, Value: unsafe.Pointer(&falseValue)},
+				&parser.Atom{Type: parser.BOOL, Value: true},
+				&parser.Atom{Type: parser.BOOL, Value: false},
 			},
 		},
 		{
@@ -51,9 +36,9 @@ func TestParser_Parse(t *testing.T) {
 				{Type: lexer.CHAR, Literal: "#\\a"},
 			},
 			Output: []parser.Sexpr{
-				&parser.Atom{Type: parser.CHAR, Value: unsafe.Pointer(&spaceCharValue)},
-				&parser.Atom{Type: parser.CHAR, Value: unsafe.Pointer(&newlineCharValue)},
-				&parser.Atom{Type: parser.CHAR, Value: unsafe.Pointer(&aCharValue)},
+				&parser.Atom{Type: parser.CHAR, Value: ' '},
+				&parser.Atom{Type: parser.CHAR, Value: '\n'},
+				&parser.Atom{Type: parser.CHAR, Value: 'a'},
 			},
 		},
 		{
@@ -62,7 +47,7 @@ func TestParser_Parse(t *testing.T) {
 				{Type: lexer.STRING, Literal: "string"},
 			},
 			Output: []parser.Sexpr{
-				&parser.Atom{Type: parser.STRING, Value: unsafe.Pointer(&stringValue)},
+				&parser.Atom{Type: parser.STRING, Value: "string"},
 			},
 		},
 		{
@@ -71,7 +56,7 @@ func TestParser_Parse(t *testing.T) {
 				{Type: lexer.IDENT, Literal: "symbol"},
 			},
 			Output: []parser.Sexpr{
-				&parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&symbolValue)},
+				&parser.Atom{Type: parser.SYMBOL, Value: "symbol"},
 			},
 		},
 		{
@@ -88,14 +73,14 @@ func TestParser_Parse(t *testing.T) {
 				{Type: lexer.RPAREN, Literal: ")"},
 			},
 			Output: []parser.Sexpr{
-				&parser.Atom{Type: parser.VECTOR, Value: unsafe.Pointer(&[]parser.Sexpr{})},
-				&parser.Atom{Type: parser.VECTOR, Value: unsafe.Pointer(&[]parser.Sexpr{
-					&parser.Atom{Type: parser.STRING, Value: unsafe.Pointer(&stringValue)},
-				})},
-				&parser.Atom{Type: parser.VECTOR, Value: unsafe.Pointer(&[]parser.Sexpr{
-					&parser.Atom{Type: parser.STRING, Value: unsafe.Pointer(&stringValue)},
-					&parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&symbolValue)},
-				})},
+				&parser.Atom{Type: parser.VECTOR, Value: []parser.Sexpr{}},
+				&parser.Atom{Type: parser.VECTOR, Value: []parser.Sexpr{
+					&parser.Atom{Type: parser.STRING, Value: "string"},
+				}},
+				&parser.Atom{Type: parser.VECTOR, Value: []parser.Sexpr{
+					&parser.Atom{Type: parser.STRING, Value: "string"},
+					&parser.Atom{Type: parser.SYMBOL, Value: "symbol"},
+				}},
 			},
 		},
 		{
@@ -112,33 +97,60 @@ func TestParser_Parse(t *testing.T) {
 			},
 			Output: []parser.Sexpr{
 				&parser.Expr{
-					Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&quoteValue)},
+					Car: &parser.Atom{Type: parser.SYMBOL, Value: "quote"},
 					Cdr: &parser.Expr{
-						Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&symbolValue)},
+						Car: &parser.Atom{Type: parser.SYMBOL, Value: "symbol"},
 						Cdr: &parser.Expr{Car: nil, Cdr: nil},
 					},
 				},
 				&parser.Expr{
-					Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&quasiquoteValue)},
+					Car: &parser.Atom{Type: parser.SYMBOL, Value: "quasiquote"},
 					Cdr: &parser.Expr{
-						Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&symbolValue)},
+						Car: &parser.Atom{Type: parser.SYMBOL, Value: "symbol"},
 						Cdr: &parser.Expr{Car: nil, Cdr: nil},
 					},
 				},
 				&parser.Expr{
-					Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&unquoteValue)},
+					Car: &parser.Atom{Type: parser.SYMBOL, Value: "unquote"},
 					Cdr: &parser.Expr{
-						Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&symbolValue)},
+						Car: &parser.Atom{Type: parser.SYMBOL, Value: "symbol"},
 						Cdr: &parser.Expr{Car: nil, Cdr: nil},
 					},
 				},
 				&parser.Expr{
-					Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&unquoteSplicingValue)},
+					Car: &parser.Atom{Type: parser.SYMBOL, Value: "unquote-splicing"},
 					Cdr: &parser.Expr{
-						Car: &parser.Atom{Type: parser.SYMBOL, Value: unsafe.Pointer(&symbolValue)},
+						Car: &parser.Atom{Type: parser.SYMBOL, Value: "symbol"},
 						Cdr: &parser.Expr{Car: nil, Cdr: nil},
 					},
 				},
+			},
+		},
+		{
+			Description: "Number",
+			Input: []lexer.Token{
+				{Type: lexer.NUMBER, Literal: "#b10"},
+				{Type: lexer.NUMBER, Literal: "#b#e0#/10"},
+				{Type: lexer.NUMBER, Literal: "#b#i+10/1#"},
+				{Type: lexer.NUMBER, Literal: "#e#o-70/1+i"},
+				{Type: lexer.NUMBER, Literal: "#i#x-fi"},
+				{Type: lexer.NUMBER, Literal: "1#e-1"},
+				{Type: lexer.NUMBER, Literal: "2s+2"},
+				{Type: lexer.NUMBER, Literal: ".3#f+33"},
+				{Type: lexer.NUMBER, Literal: "4.4#d+4"},
+				{Type: lexer.NUMBER, Literal: "55#.l-5"},
+			},
+			Output: []parser.Sexpr{
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(2, 0), false)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(0, 0), true)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(1, 0), true)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(-56, 1), false)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(0, -15), true)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(1, 0), true)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(200, 0), false)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(3e32, 0), true)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(44000, 0), true)},
+				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(0.0055, 0), true)},
 			},
 		},
 	}
@@ -155,7 +167,7 @@ func TestParser_Parse(t *testing.T) {
 
 		for i, r := range result {
 			if !r.Equals(c.Output[i]) {
-				t.Errorf("expected %v got %v", c.Output, result)
+				t.Errorf("expected %v got %v", c.Output[i], result[i])
 			}
 		}
 	}

@@ -2,7 +2,7 @@ package parser
 
 import (
 	"github.com/vkhonin/scheme/lexer"
-	"unsafe"
+	"github.com/vkhonin/scheme/parser/number"
 )
 
 const (
@@ -34,7 +34,7 @@ type Sexpr interface {
 
 type Atom struct {
 	Type  AtomType
-	Value unsafe.Pointer
+	Value interface{}
 }
 
 func (a *Atom) Equals(s Sexpr) bool {
@@ -49,14 +49,14 @@ func (a *Atom) Equals(s Sexpr) bool {
 
 	switch a.Type {
 	case BOOL:
-		return *(*bool)(a.Value) == *(*bool)(a2.Value)
+		return (a.Value).(bool) == (a2.Value).(bool)
 	case CHAR:
-		return *(*rune)(a.Value) == *(*rune)(a2.Value)
+		return (a.Value).(rune) == (a2.Value).(rune)
 	case STRING, SYMBOL:
-		return *(*string)(a.Value) == *(*string)(a2.Value)
+		return (a.Value).(string) == (a2.Value).(string)
 	case VECTOR:
-		aVector := *(*[]Sexpr)(a.Value)
-		a2Vector := *(*[]Sexpr)(a2.Value)
+		aVector := (a.Value).([]Sexpr)
+		a2Vector := (a2.Value).([]Sexpr)
 		la := len(aVector)
 		la2 := len(a2Vector)
 		if la != la2 {
@@ -69,7 +69,9 @@ func (a *Atom) Equals(s Sexpr) bool {
 		}
 		return true
 	case NUMBER:
-		return false
+		aNum := (a.Value).(*number.Number)
+		a2Num := (a2.Value).(*number.Number)
+		return aNum.IsNumber() && a2Num.IsNumber() && aNum.Inexact() == a2Num.Inexact() && aNum.Value() == a2Num.Value()
 	default:
 		panic("type comparison not implemented")
 	}
@@ -127,23 +129,17 @@ func (p *Parser) ParseNextNode() Sexpr {
 
 	switch currentToken.Type {
 	case lexer.BOOL:
-		value := p.parseBool(currentToken.Literal)
-		sexpr = &Atom{Type: BOOL, Value: unsafe.Pointer(&value)}
+		sexpr = &Atom{Type: BOOL, Value: p.parseBool(currentToken.Literal)}
 	case lexer.NUMBER:
-		value := p.parseNumber(currentToken.Literal)
-		sexpr = &Atom{Type: NUMBER, Value: unsafe.Pointer(&value)}
+		sexpr = &Atom{Type: NUMBER, Value: p.parseNumber(currentToken.Literal)}
 	case lexer.CHAR:
-		value := p.parseChar(currentToken.Literal)
-		sexpr = &Atom{Type: CHAR, Value: unsafe.Pointer(&value)}
+		sexpr = &Atom{Type: CHAR, Value: p.parseChar(currentToken.Literal)}
 	case lexer.STRING:
-		value := currentToken.Literal
-		sexpr = &Atom{Type: STRING, Value: unsafe.Pointer(&value)}
+		sexpr = &Atom{Type: STRING, Value: currentToken.Literal}
 	case lexer.IDENT:
-		value := currentToken.Literal
-		sexpr = &Atom{Type: SYMBOL, Value: unsafe.Pointer(&value)}
+		sexpr = &Atom{Type: SYMBOL, Value: currentToken.Literal}
 	case lexer.HPAREN:
-		value := p.parseVector()
-		sexpr = &Atom{Type: VECTOR, Value: unsafe.Pointer(&value)}
+		sexpr = &Atom{Type: VECTOR, Value: p.parseVector()}
 	case lexer.SQUOTE, lexer.BQUOTE, lexer.COMMA, lexer.COMMAT:
 		sexpr = p.parseAbbrev()
 	case lexer.LPAREN:
@@ -159,7 +155,7 @@ func (*Parser) parseBool(literal string) bool {
 }
 
 func (p *Parser) parseNumber(literal string) any {
-	panic("not implemented")
+	return number.NewFromLiteral(literal).Parse()
 }
 
 func (*Parser) parseChar(literal string) rune {
@@ -197,10 +193,8 @@ func (p *Parser) parseVector() []Sexpr {
 func (p *Parser) parseAbbrev() *Expr {
 	node := &p.Tokens[p.index]
 
-	abbrev := abbrevToIdent[node.Literal]
-
 	value := Expr{
-		Car: &Atom{Type: SYMBOL, Value: unsafe.Pointer(&abbrev)},
+		Car: &Atom{Type: SYMBOL, Value: abbrevToIdent[node.Literal]},
 	}
 
 	p.index++

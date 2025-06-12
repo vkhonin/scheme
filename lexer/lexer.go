@@ -2,7 +2,7 @@ package lexer
 
 import (
 	"errors"
-	"regexp"
+	"github.com/vkhonin/scheme/parser/number"
 	"strings"
 	"text/scanner"
 )
@@ -24,60 +24,6 @@ const (
 	NUMBER                  // Literal example: 1
 )
 
-// Number-related regexp as in <number> and children (7.1.1. Lexical structure).
-const (
-	exponentMarker = `[esfdl]`
-	sign           = `[+-]?`
-	exactness      = `(#[ie])?`
-	radix2         = `#b`
-	radix8         = `#o`
-	radix10        = `(#d)?`
-	radix16        = `#x`
-	digit2         = `[0-1]`
-	digit8         = `[0-7]`
-	digit10        = `[0-9]`
-	digit16        = `[0-9a-f]`
-
-	suffix = `(` + exponentMarker + sign + digit10 + `+)?`
-
-	prefix2  = radix2 + exactness + `|` + exactness + radix2
-	prefix8  = radix8 + exactness + `|` + exactness + radix8
-	prefix10 = radix10 + exactness + `|` + exactness + radix10
-	prefix16 = radix16 + exactness + `|` + exactness + radix16
-
-	uinteger2  = digit2 + `+#*`
-	uinteger8  = digit8 + `+#*`
-	uinteger10 = digit10 + `+#*`
-	uinteger16 = digit16 + `+#*`
-
-	decimal10 = uinteger10 + suffix +
-		`|\.` + digit10 + `+#*` + suffix +
-		`|` + digit10 + `+\.` + digit10 + `*#*` + suffix +
-		`|` + digit10 + `+#+\.#*` + suffix
-
-	ureal2  = uinteger2 + `(/` + uinteger2 + `)?`
-	ureal8  = uinteger8 + `(/` + uinteger8 + `)?`
-	ureal10 = uinteger10 + `(/` + uinteger10 + `)?` + `|` + decimal10
-	ureal16 = uinteger16 + `(/` + uinteger16 + `)?`
-
-	real2  = sign + ureal2
-	real8  = sign + ureal8
-	real10 = sign + `(` + ureal10 + `)`
-	real16 = sign + ureal16
-
-	complex2  = real2 + `(@` + real2 + `|[+-](` + ureal2 + `)?i` + `)?|[+-](` + ureal2 + `)?i`
-	complex8  = real8 + `(@` + real8 + `|[+-](` + ureal8 + `)?i` + `)?|[+-](` + ureal8 + `)?i`
-	complex10 = real10 + `(@` + real10 + `|[+-](` + ureal10 + `)?i` + `)?|[+-](` + ureal10 + `)?i`
-	complex16 = real16 + `(@` + real16 + `|[+-](` + ureal16 + `)?i` + `)?|[+-](` + ureal16 + `)?i`
-
-	num2  = `(` + prefix2 + `)(` + complex2 + `)`
-	num8  = `(` + prefix8 + `)(` + complex8 + `)`
-	num10 = `(` + prefix10 + `)(` + complex10 + `)`
-	num16 = `(` + prefix16 + `)(` + complex16 + `)`
-
-	number = `^((` + num2 + `)|(` + num8 + `)|(` + num10 + `)|(` + num16 + `))$`
-)
-
 var (
 	EOF            = errors.New("EOF")
 	INVALID_DOT    = errors.New("invalid dot token")
@@ -86,8 +32,6 @@ var (
 	INVALID_NUMBER = errors.New("invalid number")
 	UNEXPECTED_EOF = errors.New("unexpected EOF")
 	UNKNOWN_NCHAR  = errors.New("unknown character name")
-
-	numberRegexp = regexp.MustCompile(number)
 )
 
 type Lexer struct {
@@ -218,7 +162,7 @@ func (l *Lexer) scanNumber(prefix rune) (Token, error) {
 		sb.WriteRune(l.Scanner.Next())
 	}
 
-	if !numberRegexp.MatchString(sb.String()) {
+	if !number.NewFromLiteral(sb.String()).IsNumber() {
 		return Token{}, INVALID_NUMBER
 	}
 
