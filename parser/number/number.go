@@ -163,8 +163,12 @@ func (n *Number) parseComplex(literal string) {
 
 	if strings.ContainsRune(literal, '@') {
 		iRaw := n.parseReal(groupVals["complexImag"])
+		sin := math.Sin(iRaw)
+		if math.Abs(sin) > 1e-52 {
+			n.inexact = true
+		}
+		iVal = rVal * sin
 		rVal = rVal * math.Cos(iRaw)
-		iVal = rVal * math.Sin(iRaw)
 	} else if strings.ContainsRune(literal, 'i') {
 		iRaw := 1.0
 		if groupVals["complexImag"] != "" {
@@ -216,6 +220,10 @@ func (n *Number) parseDecimal(literal string) float64 {
 		}
 		return r
 	}, literal)
+
+	if strings.ContainsRune(literal, '.') || strings.ContainsRune(literal, 'e') {
+		n.inexact = true
+	}
 
 	value, err := strconv.ParseFloat(literal, 0)
 	if err != nil {
