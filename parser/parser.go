@@ -217,6 +217,10 @@ func (p *Parser) parseList() *Expr {
 	p.index++
 	node := &p.Tokens[p.index]
 
+	if node.Type == lexer.DOT {
+		panic("unexpected list end")
+	}
+
 	for node.Type != lexer.RPAREN {
 		if node.Type == lexer.DOT {
 			p.index++
@@ -224,9 +228,10 @@ func (p *Parser) parseList() *Expr {
 
 			node = &p.Tokens[p.index]
 			if node.Type != lexer.RPAREN {
-				// TODO: replace with error
 				panic("list end expected")
 			}
+
+			break
 		}
 
 		currentNode.Car = p.ParseNextNode()

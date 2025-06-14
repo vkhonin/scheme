@@ -153,6 +153,43 @@ func TestParser_Parse(t *testing.T) {
 				&parser.Atom{Type: parser.NUMBER, Value: number.NewFromValue(complex(0.0055, 0), true)},
 			},
 		},
+		{
+			Description: "List",
+			Input: []lexer.Token{
+				{Type: lexer.LPAREN, Literal: "("},
+				{Type: lexer.RPAREN, Literal: ")"},
+				{Type: lexer.LPAREN, Literal: "("},
+				{Type: lexer.STRING, Literal: "string"},
+				{Type: lexer.RPAREN, Literal: ")"},
+				{Type: lexer.LPAREN, Literal: "("},
+				{Type: lexer.STRING, Literal: "string"},
+				{Type: lexer.STRING, Literal: "string"},
+				{Type: lexer.RPAREN, Literal: ")"},
+				{Type: lexer.LPAREN, Literal: "("},
+				{Type: lexer.STRING, Literal: "string"},
+				{Type: lexer.DOT, Literal: "."},
+				{Type: lexer.STRING, Literal: "string"},
+				{Type: lexer.RPAREN, Literal: ")"},
+			},
+			Output: []parser.Sexpr{
+				&parser.Expr{Car: nil, Cdr: nil},
+				&parser.Expr{
+					Car: &parser.Atom{Type: parser.STRING, Value: "string"},
+					Cdr: &parser.Expr{Car: nil, Cdr: nil},
+				},
+				&parser.Expr{
+					Car: &parser.Atom{Type: parser.STRING, Value: "string"},
+					Cdr: &parser.Expr{
+						Car: &parser.Atom{Type: parser.STRING, Value: "string"},
+						Cdr: &parser.Expr{Car: nil, Cdr: nil},
+					},
+				},
+				&parser.Expr{
+					Car: &parser.Atom{Type: parser.STRING, Value: "string"},
+					Cdr: &parser.Atom{Type: parser.STRING, Value: "string"},
+				},
+			},
+		},
 	}
 
 	for _, c := range testCases {
